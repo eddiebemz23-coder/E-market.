@@ -1,4 +1,5 @@
 import type { CurrencyCode } from '@/lib/money';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 
 /**
  * Shapes the browser sees. These mirror the API responses, which means every `Date` has
@@ -368,7 +369,7 @@ export interface AddressView {
   districtCode: string;
   isMajorDistrict: boolean;
   countryId: number;
-  countryCode: 'UG' | 'KE';
+  countryCode: AfricanCountryCode;
   countryCurrency: CurrencyCode;
   zoneId: number | null;
   zoneName: string | null;

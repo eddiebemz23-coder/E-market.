@@ -35,15 +35,16 @@ export default async function HomePage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-bemz-700 shadow-card">
               <Truck className="size-3.5" />
-              Delivery priced by district, from Kampala to Kisoro
+              Delivery priced by district, across 55 African countries
             </p>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight text-ink-950 sm:text-4xl">
               Buy from traders near you.
               <span className="block text-bemz-700">Pay with MoMo, Airtel Money or cash.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-ink-600">
-              Bemz is a marketplace for Uganda and Kenya: real shops, prices in shillings that already
-              include VAT, and a rider who brings the parcel to your parish instead of a pickup point across town.
+              Bemz is a marketplace for Africa: real shops from Kampala to Nairobi, prices in US dollars
+              or your local currency with VAT included, and a rider who brings the parcel to your parish
+              instead of a pickup point across town.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <LinkButton href="/search?sort=popular" size="lg">
@@ -61,7 +62,7 @@ export default async function HomePage() {
               </div>
               <div>
                 <dt className="text-ink-500">Markets</dt>
-                <dd className="font-semibold text-ink-900">UGX · KES</dd>
+                <dd className="font-semibold text-ink-900">USD · UGX · KES +40</dd>
               </div>
               <div>
                 <dt className="text-ink-500">Verified sellers</dt>
@@ -70,7 +71,7 @@ export default async function HomePage() {
             </dl>
           </div>
 
-          {trending.items[0] && (
+          {trending.items[0] ? (
             <Link
               href={`/product/${trending.items[0].shop.slug}/${trending.items[0].slug}`}
               className="card overflow-hidden"
@@ -85,6 +86,22 @@ export default async function HomePage() {
               <div className="flex items-center gap-2 p-4">
                 <Star className="size-4 shrink-0 fill-clay-400 text-clay-500" />
                 <p className="text-sm font-medium text-ink-900">Selling fastest right now: {trending.items[0].title}</p>
+              </div>
+            </Link>
+          ) : (
+            <Link href="/search" className="card overflow-hidden">
+              <ListingImage
+                src="/images/categories/agriculture.jpg"
+                alt="A market stall piled with fresh produce"
+                priority
+                className="aspect-[4/3] w-full"
+                sizes="(min-width: 1024px) 40vw, 100vw"
+              />
+              <div className="flex items-center gap-2 p-4">
+                <Star className="size-4 shrink-0 fill-clay-400 text-clay-500" />
+                <p className="text-sm font-medium text-ink-900">
+                  From market stalls to your doorstep — browse what traders are listing today.
+                </p>
               </div>
             </Link>
           )}

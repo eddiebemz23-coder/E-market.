@@ -8,6 +8,7 @@ import type { CurrencyCode } from '@/lib/money';
 import type { PaymentProvider, PaymentStatus, PaymentView } from '@/lib/client/types';
 import { formatCountdown, money } from '@/lib/client/format';
 import { regionForCurrency } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 import { PhoneInput } from '@/components/auth/phone-input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/toast';
@@ -52,7 +53,7 @@ export function PaymentStatus({
   const [retrying, setRetrying] = useState(false);
   const [payerPhone, setPayerPhone] = useState('');
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [region, setRegion] = useState<'UG' | 'KE'>(regionForCurrency(currency));
+  const [region, setRegion] = useState<AfricanCountryCode>(regionForCurrency(currency));
   const [showPhone, setShowPhone] = useState(false);
   const inFlight = useRef(false);
 

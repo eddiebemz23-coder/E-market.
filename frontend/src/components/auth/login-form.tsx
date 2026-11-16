@@ -10,6 +10,7 @@ import { PhoneInput } from '@/components/auth/phone-input';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/field';
 import { cn } from '@/lib/cn';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 
 type Mode = 'code' | 'password';
 
@@ -30,7 +31,7 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
   const { mergeAfterSignIn, count } = useCart();
 
   const [mode, setMode] = useState<Mode>('code');
-  const [region, setRegion] = useState<'UG' | 'KE'>('UG');
+  const [region, setRegion] = useState<AfricanCountryCode>('UG');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [identifier, setIdentifier] = useState('');
@@ -89,7 +90,7 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
     <div className="card mx-auto w-full max-w-md p-6">
       <h1 className="text-xl font-bold text-ink-900">Sign in to Bemz</h1>
       <p className="mt-1 text-sm text-ink-500">
-        No account yet? A code on your phone creates one for you.
+        No account yet? Create one first — we send sign-in codes to both your phone and your email.
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1">
@@ -106,7 +107,7 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
               mode === option ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-600',
             )}
           >
-            {option === 'code' ? 'Code by SMS' : 'Password'}
+            {option === 'code' ? 'Code by SMS + email' : 'Password'}
           </button>
         ))}
       </div>

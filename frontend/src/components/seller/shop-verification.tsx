@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { SelectField, TextField } from '@/components/ui/field';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { useToast } from '@/components/toast';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 
 const DOCUMENT_TYPES = [
   { value: 'NATIONAL_ID', label: 'National ID (NIN / ID number)' },
@@ -59,7 +60,7 @@ export interface PayoutAccountState {
  * Cloudinary folder, so the seller sees the document type and its review state — never a URL that
  * would work for anybody else.
  */
-export function KycPanel({ shopId, initial, countryCode }: { shopId: string; initial: KycInitialState; countryCode: 'UG' | 'KE' }) {
+export function KycPanel({ shopId, initial, countryCode }: { shopId: string; initial: KycInitialState; countryCode: AfricanCountryCode }) {
   const router = useRouter();
   const toast = useToast();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -294,7 +295,7 @@ function humanStatus(status: string): string {
  * withdrawals until support has called it — the window in which a hijacked account most wants to
  * change where its money goes, so the confirmation is a human on the phone, not a checkbox.
  */
-export function PayoutAccountForm({ initial, countryCode }: { initial: PayoutAccountState; countryCode: 'UG' | 'KE' }) {
+export function PayoutAccountForm({ initial, countryCode }: { initial: PayoutAccountState; countryCode: AfricanCountryCode }) {
   const router = useRouter();
   const toast = useToast();
   const [provider, setProvider] = useState(initial.provider ?? (countryCode === 'KE' ? 'MTN_MOMO' : 'MTN_MOMO'));

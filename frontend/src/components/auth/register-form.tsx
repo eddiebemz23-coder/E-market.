@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -10,8 +10,9 @@ import { PhoneInput } from '@/components/auth/phone-input';
 import { Button } from '@/components/ui/button';
 import { CheckboxField, SwitchField, TextField } from '@/components/ui/field';
 import { REGIONS, type RegionInfo } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 
-type Region = 'UG' | 'KE';
+type Region = AfricanCountryCode;
 
 interface RegisterResponse {
   user: { id: string; name: string | null; phone: string; role: string };
@@ -41,7 +42,19 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [signedUpPhone, setSignedUpPhone] = useState<string | null>(null);
+  const [shopCreated, setShopCreated] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [code, setCode] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setTimeout(() => setSecondsLeft((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
 
   function rememberRegion(next: Region) {
     setRegion(next);
@@ -58,33 +71,23 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
       const result = await api.post<RegisterResponse>('/api/auth/register', {
         name,
         phone,
-        email: email.trim() || undefined,
-        password: password || undefined,
+        email: email.trim(),
+        password,
         country: region,
         asSeller,
         shopName: asSeller ? shopName : undefined,
         acceptTerms: true,
       });
 
-      if (result.hasPassword) {
-        // The password door proves nothing about the SIM, so the session starts here and the
-        // number stays unverified until the next OTP login.
-        const signInResult = await signIn('password', {
-          identifier: result.user.phone,
-          password,
-          redirect: false,
-        });
-        if (!signInResult?.error) {
-          if (count > 0) await mergeAfterSignIn();
-          router.replace(asSeller && result.shop ? '/seller' : callbackUrl);
-          router.refresh();
-          return;
-        }
-        setSignedUpPhone(result.user.phone);
-        return;
-      }
+      // Send the first verification code to BOTH channels right away; a delivery hiccup must
+      // not block account creation — the buyer can resend from the code step below.
+      await api
+        .post('/api/auth/otp/request', { phone, purpose: 'REGISTER', defaultRegion: region })
+        .catch(() => null);
 
+      setShopCreated(Boolean(asSeller && result.shop));
       setSignedUpPhone(result.user.phone);
+      setSecondsLeft(60);
     } catch (failure) {
       if (failure instanceof ApiFailure) {
         setIssues(failure.issues);
@@ -97,26 +100,90 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
     }
   }
 
+  async function verifyCode(event: React.FormEvent) {
+    event.preventDefault();
+    if (!signedUpPhone) return;
+    setOtpError(null);
+    setOtpBusy(true);
+    const result = await signIn('phone-otp', { phone: signedUpPhone, code, redirect: false });
+    setOtpBusy(false);
+    if (!result || result.error) {
+      setOtpError('That code did not match. Check the latest email or SMS and try again.');
+      return;
+    }
+    if (count > 0) await mergeAfterSignIn();
+    router.replace(shopCreated ? '/seller' : callbackUrl);
+    router.refresh();
+  }
+
+  async function resendCode() {
+    if (!signedUpPhone) return;
+    setOtpError(null);
+    setOtpBusy(true);
+    try {
+      await api.post('/api/auth/otp/request', { phone: signedUpPhone, purpose: 'REGISTER', defaultRegion: region });
+      setSecondsLeft(60);
+    } catch (failure) {
+      setOtpError(failure instanceof ApiFailure ? failure.message : 'Could not resend the code');
+    } finally {
+      setOtpBusy(false);
+    }
+  }
+
   if (signedUpPhone) {
     return (
       <div className="card mx-auto w-full max-w-md p-6">
-        <h1 className="text-xl font-bold text-ink-900">Account created</h1>
+        <h1 className="text-xl font-bold text-ink-900">Enter your verification code</h1>
         <p className="mt-2 text-sm text-ink-600">
-          {asSeller
-            ? 'Your shop is open for business in draft. Verify the number, then add your first listing.'
-            : 'Verify the number on your phone to start buying.'}
+          {shopCreated
+            ? 'Your shop is open in draft. Verify the account, then add your first listing.'
+            : 'One last step before you start buying.'}
         </p>
         <p className="mt-3 text-sm text-ink-500">
-          Sign in with a code sent to <span className="font-medium text-ink-800">{signedUpPhone}</span>.
+          We sent a 6-digit code to <span className="font-medium text-ink-800">{signedUpPhone}</span>
+          {email.trim() ? (
+            <>
+              {' '}and <span className="font-medium text-ink-800">{email.trim()}</span>
+            </>
+          ) : null}
+          . Enter it below.
         </p>
-        <Button
-          className="mt-5"
-          block
-          size="lg"
-          onClick={() => router.replace(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+
+        {otpError && (
+          <p role="alert" className="mt-4 rounded-lg bg-clay-50 px-3 py-2 text-sm text-clay-800">
+            {otpError}
+          </p>
+        )}
+
+        <form className="mt-4 space-y-4" onSubmit={verifyCode}>
+          <TextField
+            label="6-digit code"
+            name="code"
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            placeholder="000000"
+            hint="The same code arrives by SMS and email — either one works."
+          />
+          <div className="flex items-center gap-3">
+            <Button block size="lg" type="submit" loading={otpBusy} disabled={code.length !== 6}>
+              Verify and continue
+            </Button>
+            <Button variant="ghost" size="lg" type="button" disabled={secondsLeft > 0 || otpBusy} onClick={resendCode}>
+              {secondsLeft > 0 ? `${secondsLeft}s` : 'Resend'}
+            </Button>
+          </div>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => { setSignedUpPhone(null); setCode(''); setOtpError(null); }}
+          className="mt-4 text-sm text-bemz-700 underline"
         >
-          Get my code and sign in
-        </Button>
+          Use a different number
+        </button>
       </div>
     );
   }
@@ -125,7 +192,8 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
     <div className="card mx-auto w-full max-w-lg p-6">
       <h1 className="text-xl font-bold text-ink-900">Create your Bemz account</h1>
       <p className="mt-1 text-sm text-ink-500">
-        A phone number is enough. Passwords are optional, and you can always sign in with a code.
+        Email and password are required. We send a verification code to both your phone and your
+        email.
       </p>
 
       {formError && (
@@ -177,25 +245,27 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
         </div>
 
         <TextField
-          label="Email (optional)"
+          label="Email"
           name="email"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           autoComplete="email"
           error={issues.email}
-          hint="Only used for receipts if you add it."
+          hint="Verification codes and receipts go here."
+          required
         />
 
         <TextField
-          label="Password (optional)"
+          label="Password"
           name="password"
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
           error={issues.password}
-          hint="At least 8 characters with one number. Leave blank to sign in by code only."
+          hint="At least 8 characters with one number."
+          required
         />
 
         <div className="rounded-card border border-ink-200 p-4">

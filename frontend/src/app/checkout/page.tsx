@@ -10,6 +10,7 @@ import type { AddressView, CartView, CheckoutResult, ProviderList } from '@/lib/
 import type { CurrencyCode } from '@/lib/money';
 import { etaLabel, money } from '@/lib/client/format';
 import { REGIONS, regionForCurrency } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 import { PhoneInput } from '@/components/auth/phone-input';
 import { Button } from '@/components/ui/button';
 import { LinkButton } from '@/components/ui/link-button';
@@ -45,7 +46,7 @@ export default function CheckoutPage() {
   const [addressId, setAddressId] = useState('');
   const [provider, setProvider] = useState('');
   const [payerPhone, setPayerPhone] = useState('');
-  const [region, setRegion] = useState<'UG' | 'KE'>('UG');
+  const [region, setRegion] = useState<AfricanCountryCode>('UG');
   const [buyerNote, setBuyerNote] = useState('');
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);

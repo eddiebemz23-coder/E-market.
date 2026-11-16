@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiFailure } from '@/lib/client/api';
-import { REGIONS } from '@/lib/client/regions';
+import { REGIONS, REGION_LIST } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 import type { DistrictRow } from '@/lib/client/types';
 import { Button } from '@/components/ui/button';
 import { SelectField, TextAreaField, TextField } from '@/components/ui/field';
@@ -40,11 +41,11 @@ const FULFILMENT: { value: string; label: string }[] = [
  * The store link is optional: left blank it is cut from the shop name, and a name that collides
  * with an existing stall gets digits appended by the server instead of being rejected.
  */
-export function OpenShopForm({ defaultCountry }: { defaultCountry: 'UG' | 'KE' }) {
+export function OpenShopForm({ defaultCountry }: { defaultCountry: AfricanCountryCode }) {
   const router = useRouter();
   const toast = useToast();
 
-  const [country, setCountry] = useState<'UG' | 'KE'>(defaultCountry);
+  const [country, setCountry] = useState<AfricanCountryCode>(defaultCountry);
   const [districts, setDistricts] = useState<DistrictRow[] | null>(null);
   const [unreachable, setUnreachable] = useState<{ id: number; name: string }[]>([]);
   const [name, setName] = useState('');
@@ -130,20 +131,22 @@ export function OpenShopForm({ defaultCountry }: { defaultCountry: 'UG' | 'KE' }
 
   return (
     <form onSubmit={submit} className="card space-y-5 p-5">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Market">
-        {(['UG', 'KE'] as const).map((code) => (
-          <button
-            key={code}
-            type="button"
-            onClick={() => setCountry(code)}
-            aria-pressed={code === country}
-            className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
-              code === country ? 'bg-bemz-600 font-semibold text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
-            }`}
-          >
-            {REGIONS[code].name} — prices in {REGIONS[code].currency}
-          </button>
-        ))}
+      <div>
+        <label className="field-label" htmlFor="open-shop-country">
+          Market
+        </label>
+        <select
+          id="open-shop-country"
+          className="field-input"
+          value={country}
+          onChange={(event) => setCountry(event.target.value as AfricanCountryCode)}
+        >
+          {REGION_LIST.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.name} — prices in {option.currency}
+            </option>
+          ))}
+        </select>
       </div>
 
       <p className="text-sm text-ink-600">

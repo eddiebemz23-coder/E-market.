@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiFailure } from '@/lib/client/api';
 import { uploadMedia } from '@/lib/client/upload';
 import { REGIONS } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 import type { DistrictRow } from '@/lib/client/types';
 import { Button } from '@/components/ui/button';
 import { SelectField, SwitchField, TextAreaField, TextField } from '@/components/ui/field';
@@ -51,11 +52,11 @@ export interface ShopProfileInitial {
  * the VAT rate on every receipt and the zone map every delivery fee is quoted from, so changing it
  * would silently re-price a whole stall. Everything else a seller can edit is here.
  */
-export function ShopProfileForm({ initial, countryCode }: { initial: ShopProfileInitial; countryCode: 'UG' | 'KE' }) {
+export function ShopProfileForm({ initial, countryCode }: { initial: ShopProfileInitial; countryCode: AfricanCountryCode }) {
   const router = useRouter();
   const toast = useToast();
 
-  const [region, setRegion] = useState<'UG' | 'KE'>(countryCode);
+  const [region, setRegion] = useState<AfricanCountryCode>(countryCode);
   const [name, setName] = useState(initial.name);
   const [slug, setSlug] = useState(initial.slug);
   const [tagline, setTagline] = useState(initial.tagline ?? '');

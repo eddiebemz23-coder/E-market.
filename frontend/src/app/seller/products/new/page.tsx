@@ -69,7 +69,6 @@ export default async function NewProductPage() {
 
       <ProductForm
         shopId={shop.id}
-        currency={overview.shop.currency}
         countryCode={countryCode}
         categories={categories}
         kycApproved={shop.kycStatus === 'APPROVED'}

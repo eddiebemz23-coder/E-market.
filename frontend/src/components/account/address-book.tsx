@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/toast';
 import { AddressForm } from '@/components/account/address-form';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 
 /**
  * The address book.
@@ -19,11 +20,11 @@ import { AddressForm } from '@/components/account/address-form';
  * buyer commits. Removing one is safe by design: every order keeps its own JSON copy of the
  * address, so the rider's instructions on a parcel already in motion cannot change.
  */
-export function AddressBook({ addresses: initial, defaultCountry }: { addresses: AddressView[]; defaultCountry: 'UG' | 'KE' }) {
+export function AddressBook({ addresses: initial, defaultCountry }: { addresses: AddressView[]; defaultCountry: AfricanCountryCode }) {
   const router = useRouter();
   const toast = useToast();
   const [addresses, setAddresses] = useState(initial);
-  const [country, setCountry] = useState<'UG' | 'KE'>(defaultCountry);
+  const [country, setCountry] = useState<AfricanCountryCode>(defaultCountry);
   const [editing, setEditing] = useState<AddressView | 'new' | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);

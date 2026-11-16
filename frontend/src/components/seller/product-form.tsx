@@ -6,7 +6,7 @@ import { api, ApiFailure } from '@/lib/client/api';
 import { toMinor, type CurrencyCode } from '@/lib/money';
 import { uploadMedia } from '@/lib/client/upload';
 import { money } from '@/lib/client/format';
-import { REGIONS } from '@/lib/client/regions';
+import { AFRICAN_CURRENCIES, type AfricanCountryCode } from '@/lib/geo-africa';
 import { Button } from '@/components/ui/button';
 import { CheckboxField, SelectField, TextAreaField, TextField } from '@/components/ui/field';
 import { useToast } from '@/components/toast';
@@ -120,15 +120,13 @@ function blankVariant(title: string, index: number): VariantDraft {
  */
 export function ProductForm({
   shopId,
-  currency,
   countryCode,
   categories,
   kycApproved,
   defaultFulfilment,
 }: {
   shopId: string;
-  currency: CurrencyCode;
-  countryCode: 'UG' | 'KE';
+  countryCode: AfricanCountryCode;
   categories: SellerCategoryOption[];
   kycApproved: boolean;
   defaultFulfilment: string;
@@ -149,13 +147,12 @@ export function ProductForm({
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [primaryCategoryId, setPrimaryCategoryId] = useState('');
   const [variants, setVariants] = useState<VariantDraft[]>(() => [blankVariant('', 0)]);
+  const [priceCurrency, setPriceCurrency] = useState<CurrencyCode>('USD');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'draft' | 'publish' | null>(null);
   const [issues, setIssues] = useState<Record<string, string>>({});
-
-  const region = REGIONS[countryCode];
 
   const selected = useMemo(
     () => categoryIds.map((id) => categories.find((category) => category.id === id)).filter(Boolean) as SellerCategoryOption[],
@@ -168,12 +165,12 @@ export function ProductForm({
     const prices = variants
       .map((variant) => {
         const major = priceInput(variant.price);
-        return major === null ? null : toMinor(major, currency);
+        return major === null ? null : toMinor(major, priceCurrency);
       })
       .filter((value): value is number => value !== null);
     if (prices.length === 0) return null;
-    return money(Math.min(...prices), currency);
-  }, [variants, currency]);
+    return money(Math.min(...prices), priceCurrency);
+  }, [variants, priceCurrency]);
 
   function toggleCategory(id: string, listable: boolean) {
     if (!listable) return;
@@ -289,9 +286,9 @@ export function ProductForm({
         name: variant.name.trim(),
         sku: variant.sku.trim().toUpperCase(),
         attributes,
-        priceMinor: major === null ? 0 : toMinor(major, currency),
-        compareAtPriceMinor: compareMajor === null ? undefined : toMinor(compareMajor, currency),
-        costPriceMinor: costMajor === null ? undefined : toMinor(costMajor, currency),
+        priceMinor: major === null ? 0 : toMinor(major, priceCurrency),
+        compareAtPriceMinor: compareMajor === null ? undefined : toMinor(compareMajor, priceCurrency),
+        costPriceMinor: costMajor === null ? undefined : toMinor(costMajor, priceCurrency),
         stockQuantity: wholeInput(variant.stock) ?? 0,
         weightGrams: wholeInput(variant.weightGrams),
         maxQuantityPerOrder: wholeInput(variant.maxPerOrder),
@@ -328,7 +325,7 @@ export function ProductForm({
       isDigital,
       weightGrams: wholeInput(weightGrams) ?? undefined,
       publish,
-      currency,
+      currency: priceCurrency,
       variants: variantPayload,
       images: photos.map((photo, index) => ({
         url: photo.url,
@@ -594,9 +591,21 @@ export function ProductForm({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">Options, prices and stock</h2>
           {pricedPreview && <p className="text-xs text-ink-600">Buyers see “from {pricedPreview}”</p>}
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SelectField
+            label="Pricing currency"
+            value={priceCurrency}
+            onChange={(event) => setPriceCurrency(event.target.value as CurrencyCode)}
+            hint="US dollars by default. Pick the currency you actually trade in."
+            options={[
+              { value: 'USD', label: 'USD — US dollar' },
+              ...AFRICAN_CURRENCIES.filter((code) => code !== 'USD').map((code) => ({ value: code, label: code })),
+            ]}
+          />
+        </div>
         <p className="text-xs text-ink-500">
-          Prices are in {region.currency} ({region.currencyLabel}) because the shop is in{' '}
-          {region.name}. Enter whole {region.currency} — a phone priced at 400,000 is typed as 400000.
+          Enter amounts in {priceCurrency} — a phone priced at 400,000 is typed as 400000. Buyers
+          see the price in the currency you choose here.
         </p>
         {issues.stock && (
           <p role="alert" className="text-sm font-medium text-clay-700">
@@ -640,17 +649,17 @@ export function ProductForm({
                   hint="4-49 letters, numbers and dashes. Yours may repeat across shops."
                 />
                 <TextField
-                  label={`Price (${region.currency})`}
+                  label={`Price (${priceCurrency})`}
                   value={variant.price}
                   onChange={(event) => updateVariant(variant.id, { price: event.target.value })}
                   inputMode="numeric"
                   required
                   placeholder="400000"
-                  leading={<span>{region.currency}</span>}
+                  leading={<span>{priceCurrency}</span>}
                   error={issues[`variants.${index}.price`]}
                   trailing={
                     priceInput(variant.price) === null ? undefined : (
-                      <span className="tabular">{money(toMinor(priceInput(variant.price)!, currency), currency)}</span>
+                      <span className="tabular">{money(toMinor(priceInput(variant.price)!, priceCurrency), priceCurrency)}</span>
                     )
                   }
                 />

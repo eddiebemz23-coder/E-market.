@@ -32,7 +32,7 @@ export default async function AdminZonesPage({
   await adminPage('/admin/zones');
 
   const { country } = parseParams(districtQuerySchema, searchParams);
-  const countryCode = country as 'UG' | 'KE' | undefined;
+  const countryCode = country;
 
   const [zones, countries, districts] = await Promise.all([
     listZones(countryCode),

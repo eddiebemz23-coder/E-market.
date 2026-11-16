@@ -2,14 +2,16 @@
 
 import { useId } from 'react';
 import { REGIONS, type RegionInfo } from '@/lib/client/regions';
+import { AFRICAN_COUNTRY_ORDER, type AfricanCountryCode } from '@/lib/geo-africa';
 import { Field } from '@/components/ui/field';
 import { cn } from '@/lib/cn';
 
-const REGION_ORDER: ('UG' | 'KE')[] = ['UG', 'KE'];
+const REGION_ORDER = AFRICAN_COUNTRY_ORDER;
 
 /**
- * Phone is the identity in both markets, so this is the most-used input on the site. The region
- * picker only supplies the default country code — a buyer who types `+254` wins.
+ * Phone is the identity across the African markets, so this is the most-used input on the
+ * site. The region picker only supplies the default country code — a buyer who types `+254`
+ * wins. Local format is 7xxxxxxxx; a leading 0 is stripped server-side.
  */
 export function PhoneInput({
   value,
@@ -24,8 +26,8 @@ export function PhoneInput({
 }: {
   value: string;
   onChange: (next: string) => void;
-  region: 'UG' | 'KE';
-  onRegionChange: (next: 'UG' | 'KE') => void;
+  region: AfricanCountryCode;
+  onRegionChange: (next: AfricanCountryCode) => void;
   label?: string;
   error?: string;
   autoComplete?: string;
@@ -42,7 +44,7 @@ export function PhoneInput({
           aria-label="Country"
           value={region}
           disabled={disabled}
-          onChange={(event) => onRegionChange(event.target.value as 'UG' | 'KE')}
+          onChange={(event) => onRegionChange(event.target.value as AfricanCountryCode)}
           className="h-[46px] rounded-lg border border-ink-200 bg-white px-2 text-sm"
         >
           {REGION_ORDER.map((code) => (

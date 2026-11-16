@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiFailure } from '@/lib/client/api';
-import { REGIONS, type RegionInfo } from '@/lib/client/regions';
+import { REGIONS, REGION_LIST, type RegionInfo } from '@/lib/client/regions';
+import type { AfricanCountryCode } from '@/lib/geo-africa';
 import type { AddressView, DistrictRow } from '@/lib/client/types';
 import { Button } from '@/components/ui/button';
 import { CheckboxField, SelectField, TextField, TextAreaField } from '@/components/ui/field';
@@ -29,8 +30,8 @@ export function AddressForm({
   onSaved,
 }: {
   address: AddressView | null;
-  country: 'UG' | 'KE';
-  onCountryChange: (next: 'UG' | 'KE') => void;
+  country: AfricanCountryCode;
+  onCountryChange: (next: AfricanCountryCode) => void;
   onCancel: () => void;
   onSaved: (saved: AddressView) => void;
 }) {
@@ -123,20 +124,22 @@ export function AddressForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Market">
-        {(['UG', 'KE'] as const).map((code) => (
-          <button
-            key={code}
-            type="button"
-            onClick={() => onCountryChange(code)}
-            aria-pressed={code === country}
-            className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
-              code === country ? 'bg-bemz-600 font-semibold text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
-            }`}
-          >
-            {REGIONS[code].name}
-          </button>
-        ))}
+      <div>
+        <label className="field-label" htmlFor="address-country">
+          Country
+        </label>
+        <select
+          id="address-country"
+          className="field-input"
+          value={country}
+          onChange={(event) => onCountryChange(event.target.value as AfricanCountryCode)}
+        >
+          {REGION_LIST.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

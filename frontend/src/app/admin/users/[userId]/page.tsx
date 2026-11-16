@@ -8,6 +8,7 @@ import type { CurrencyCode } from '@/lib/money';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AdminDecisionForm } from '@/components/admin/decision-form';
+import { VerifyUserButton } from '@/components/admin/verify-user-button';
 
 /**
  * `GET /admin/users/[userId]`
@@ -239,6 +240,43 @@ export default async function AdminUserCasePage({
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="card p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">Verification</h2>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Badge tone={account.phoneVerified ? 'success' : 'neutral'}>
+            Phone {account.phoneVerified ? `verified ${formatDate(account.phoneVerified)}` : 'not verified'}
+          </Badge>
+          <Badge tone={account.emailVerified ? 'success' : 'neutral'}>
+            Email{' '}
+            {account.email
+              ? account.emailVerified
+                ? `verified ${formatDate(account.emailVerified)}`
+                : 'not verified'
+              : 'not on file'}
+          </Badge>
+        </div>
+        {(!account.phoneVerified || (account.email && !account.emailVerified)) &&
+        account.status !== 'SUSPENDED' &&
+        account.status !== 'BANNED' ? (
+          <div className="mt-4">
+            <p className="max-w-prose text-sm text-ink-600">
+              Use this when the one-time code never landed — a swapped SIM or an email in spam. It
+              stamps the unproven channels and activates an account still awaiting verification.
+              The decision is filed in the audit trail under your name.
+            </p>
+            <div className="mt-3">
+              <VerifyUserButton userId={account.id} name={name} />
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-ink-500">
+            {account.status === 'SUSPENDED' || account.status === 'BANNED'
+              ? 'This account is restricted — restore access below before verifying it.'
+              : 'Every channel on this account is verified.'}
+          </p>
         )}
       </section>
 

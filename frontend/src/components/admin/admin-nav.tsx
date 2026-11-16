@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClipboardList, LayoutGrid, Map, ScrollText, Tags, Wallet } from 'lucide-react';
+import { ClipboardList, LayoutGrid, Map, ScrollText, Tags, Users, Wallet } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const ITEMS = [
   { href: '/admin', label: 'Numbers', icon: LayoutGrid },
+  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/queues', label: 'Queues', icon: ClipboardList },
   { href: '/admin/payouts', label: 'Payouts', icon: Wallet },
   { href: '/admin/zones', label: 'Delivery', icon: Map },
