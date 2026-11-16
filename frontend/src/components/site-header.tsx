@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
-import { LayoutGrid, LogOut, Menu, Search, ShoppingCart, Store, User, Package, MapPin } from 'lucide-react';
+import { LayoutGrid, LogOut, Menu, Search, ShoppingCart, Store, User, Package, MapPin, Download } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useCart } from '@/lib/client/cart-store';
+import { useInstallPrompt } from '@/lib/client/install-prompt';
 
 const NAV_LINKS = [
   { href: '/search?sort=popular', label: 'Trending' },
@@ -31,7 +32,8 @@ export function SiteHeader() {
   const role = session?.user?.role;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <>
+      <header className="sticky top-0 z-40 border-b border-ink-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="container-page flex h-16 items-center gap-3">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Bemz Africa home">
           <span className="grid size-9 place-items-center rounded-lg bg-bemz-600 text-lg font-black text-white">B</span>
@@ -84,6 +86,8 @@ export function SiteHeader() {
               Admin
             </Link>
           )}
+
+          <InstallButton />
 
           <details className="relative hidden sm:block">
             <summary className="grid size-11 cursor-pointer list-none place-items-center rounded-lg text-ink-700 hover:bg-ink-100 [&::-webkit-details-marker]:hidden">
@@ -148,8 +152,73 @@ export function SiteHeader() {
         ))}
       </div>
 
+      </header>
+
+      {/* Outside <header>: the header's backdrop-blur makes it the containing block for fixed
+          descendants, which pinned this bar to the header instead of the bottom of the screen. */}
       <MobileTabBar />
-    </header>
+    </>
+  );
+}
+
+/**
+ * Always-available install entry point. Browsers hide their own behind a menu that most buyers
+ * never open, and some (in-app web views) have no install at all — so the button stays put and
+ * falls back to spelling out the manual route when the browser gives us no prompt to fire.
+ */
+function InstallButton() {
+  const { canPrompt, standalone, ios, install } = useInstallPrompt();
+  const pathname = usePathname();
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  // The header outlives client-side navigation, so the popover must not survive one.
+  useEffect(() => setHelpOpen(false), [pathname]);
+
+  if (standalone) return null;
+
+  async function onClick() {
+    if (!canPrompt) {
+      setHelpOpen((open) => !open);
+      return;
+    }
+    setHelpOpen(false);
+    await install();
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-expanded={helpOpen}
+        className={cn(
+          'flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium hover:bg-ink-100',
+          canPrompt ? 'text-bemz-700' : 'text-ink-700',
+        )}
+      >
+        <Download className="size-5" />
+        <span className="hidden lg:inline">Install app</span>
+        <span className="sr-only">Install the Bemz app</span>
+      </button>
+
+      {helpOpen && (
+        <div className="absolute right-0 top-12 w-64 rounded-xl border border-ink-200 bg-white p-3 shadow-raised">
+          <p className="text-sm font-semibold text-ink-900">Put Bemz on your home screen</p>
+          <p className="mt-1 text-sm text-ink-600">
+            {ios
+              ? 'In Safari, tap Share, then "Add to Home Screen".'
+              : 'Open your browser menu (⋮) and tap "Install app" or "Add to Home screen".'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setHelpOpen(false)}
+            className="mt-2 text-sm font-medium text-bemz-700 hover:underline"
+          >
+            Got it
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
