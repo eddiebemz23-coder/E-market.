@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { InstallBanner } from '@/components/pwa/install-banner';
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <SiteFooter />
           <ServiceWorkerRegister />
+          <InstallBanner />
         </Providers>
       </body>
     </html>
