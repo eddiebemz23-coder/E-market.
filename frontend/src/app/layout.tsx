@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -10,12 +11,15 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: 'Bemz Africa | buy and sell in Uganda and Kenya',
+    default: 'Bemz Africa | buy from traders across 55 markets',
     template: '%s · Bemz Africa',
   },
   description:
-    'A marketplace for Ugandan and Kenyan traders: pay with MTN Mobile Money, Airtel Money or card, and get delivery to your district.',
-  keywords: ['Uganda online shopping', 'Kenya marketplace', 'MTN MoMo', 'Airtel Money', 'Kampala', 'Nairobi'],
+    'A marketplace for African traders: prices in US dollars or your local currency, pay with MoMo, Airtel Money or cash, and get delivery to your district.',
+  keywords: ['African marketplace', 'online shopping Uganda Kenya', 'MTN MoMo', 'Airtel Money', 'Kampala', 'Nairobi'],
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
   openGraph: {
     type: 'website',
     siteName: 'Bemz Africa',
@@ -45,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <SiteFooter />
+          <ServiceWorkerRegister />
         </Providers>
       </body>
     </html>
