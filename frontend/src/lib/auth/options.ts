@@ -6,6 +6,7 @@ import { verifyPassword } from './password';
 import { verifyOtp } from '../otp';
 import { env } from '../env';
 import { normalisePhone } from '../phone';
+import { notifyAccountChange } from '../email';
 
 /**
  * Two sign-in paths, matching how the market actually behaves:
@@ -120,6 +121,15 @@ export const authOptions: NextAuthOptions = {
                   : found.lockedUntil,
             },
           });
+          if (failedLoginCount >= MAX_FAILED_LOGINS && (!found.lockedUntil || found.lockedUntil <= new Date())) {
+            await notifyAccountChange({
+              userId: found.id,
+              recipients: [found.email],
+              template: 'account_locked',
+              subject: 'Bemz: your account was temporarily locked',
+              message: `Sign-in was temporarily locked after repeated unsuccessful password attempts. Wait ${LOCK_MINUTES} minutes before trying again.`,
+            });
+          }
           return null;
         }
 

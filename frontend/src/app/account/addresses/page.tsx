@@ -33,17 +33,17 @@ export default async function AddressesPage() {
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-ink-950">Delivery addresses</h1>
         <p className="mt-1 text-sm text-ink-600">
-          Stops you have saved in Uganda and Kenya — checkout starts with the default one and re-prices delivery the
-          moment you choose another.
+          Your saved delivery stops — checkout starts with your default address and re-prices delivery
+          when you choose another.
         </p>
       </div>
 
       <AddressBook addresses={addresses} defaultCountry={regionForCurrency(user.preferredCurrency)} />
 
       <p className="rounded-card bg-ink-50 px-4 py-3 text-xs leading-relaxed text-ink-600">
-        Each stop carries the delivery zone of its district, which is what sets the fee and the number of days. A
-        seller who covers the whole country charges less to reach Kampala than to reach Kotido, and cash on delivery is
-        switched off zone by zone — so an address in a zone without it will not offer it at checkout.{' '}
+        Delivery availability, fees and estimated times depend on the country, delivery zone and seller coverage.
+        For example, a nearby zone may cost less than a remote one. Payment options also depend on country and zone;
+        cash on delivery is only shown where available.{' '}
         <Link href="/checkout" className="font-medium text-bemz-700 hover:underline">
           Go to checkout
         </Link>

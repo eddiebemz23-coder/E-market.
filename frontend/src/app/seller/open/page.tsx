@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Open a shop',
   description:
-    'Sell on Bemz Africa in Uganda or Kenya: list items in UGX or KES, get paid to MTN Mobile Money or Airtel Money, and deliver to your district.',
+    'Open a shop on Bemz Africa, a marketplace for buyers and sellers across Africa. Payment and delivery options vary by country and zone.',
 };
 
 export default async function OpenShopPage() {

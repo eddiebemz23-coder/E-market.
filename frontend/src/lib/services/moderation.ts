@@ -1,7 +1,7 @@
 import 'server-only';
 import { Prisma, prisma, type AuditEntity, type CurrencyCode, type OrderStatus } from '../prisma';
 import { conflict, notFound, unprocessable } from '../http';
-import { sendEmail } from '../email';
+import { notifyAccountChange } from '../email';
 import { env } from '../env';
 
 /**
@@ -24,10 +24,7 @@ function emailAccountChange(
   subject: string,
   message: string,
 ) {
-  if (!to) return Promise.resolve();
-  return sendEmail({ to, userId, template, subject, message }).catch((error) =>
-    console.error(`[admin:${template}] email delivery failed`, error),
-  );
+  return notifyAccountChange({ recipients: [to], userId, template, subject, message });
 }
 
 /**
@@ -243,6 +240,8 @@ export async function setUserStatus(
     return row;
   });
 
+  if (user.status === updated.status) return { ...updated, openOrders };
+
   const statusCopy =
     params.status === 'ACTIVE'
       ? {
@@ -404,17 +403,13 @@ export async function verifyUserByAdmin(userId: string, params: { reason?: strin
     return row;
   });
 
-  // The verification stands even if the inbox is unreachable — the email is a courtesy, not
-  // the decision itself, so a delivery failure is logged rather than rolled back.
-  if (user.email) {
-    await sendEmail({
-      to: user.email,
-      userId,
-      template: 'account_verified',
-      subject: 'Bemz: your account is verified',
-      message: `Hello${user.name ? ` ${user.name}` : ''},\n\nThe Bemz platform team has verified your account. You can now buy and sell without limits.\n\nSign in any time with the code sent to your phone and email, or with your password.\n\nIf you did not expect this, contact support.`,
-    }).catch((error) => console.error('[admin:verify] email delivery failed', error));
-  }
+  await notifyAccountChange({
+    recipients: [user.email],
+    userId,
+    template: 'account_verified',
+    subject: 'Bemz: your account is verified',
+    message: `Hello${user.name ? ` ${user.name}` : ''},\n\nThe Bemz platform team has verified your account.\n\nSign in with a verification code or your password to review your account.`,
+  });
 
   return updated;
 }

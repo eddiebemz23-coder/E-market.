@@ -67,7 +67,7 @@ export const updateProfileSchema = z.object({
     .transform((value) => (value ? value.toLowerCase() : undefined)),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'UNDISCLOSED']).optional(),
   preferredCurrency: z.enum(CURRENCIES).optional(),
-  languageCode: z.enum(['en', 'sw', 'lg']).default('en'),
+  languageCode: z.enum(['en', 'sw', 'lg']).optional(),
   marketingOptIn: z.boolean().optional(),
   whatsappOptIn: z.boolean().optional(),
 });

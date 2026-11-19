@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth/guards';
 import { loadMe, updateProfile } from '@/lib/services/accounts';
 import { updateProfileSchema } from '@/lib/validation/auth';
 import { prisma } from '@/lib/prisma';
+import { notifyAccountChange } from '@/lib/email';
 
 /**
  * `GET /api/me`
@@ -75,6 +76,13 @@ export const DELETE = withRoute(async (request: Request) => {
     },
   });
 
+  await notifyAccountChange({
+    userId: user.id,
+    recipients: [user.email],
+    template: 'account_closed',
+    subject: 'Bemz: your account was closed',
+    message: 'Your account was closed. You can no longer sign in to this account.',
+  });
   return jsonBody({ closed: true });
 });
 

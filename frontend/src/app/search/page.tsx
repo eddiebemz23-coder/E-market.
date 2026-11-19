@@ -23,7 +23,7 @@ const PATHNAME = '/search';
 
 export const metadata: Metadata = {
   title: 'Search Bemz',
-  description: 'Search Ugandan and Kenyan listings by keyword, price, brand, rating and availability.',
+  description: 'Search listings on Bemz Africa, an African marketplace, by keyword, price, brand, rating and availability.',
 };
 
 export default async function SearchPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
@@ -36,7 +36,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
     <div className="container-page py-6">
       <h1 className="text-xl font-bold text-ink-900 sm:text-2xl">{heading}</h1>
       <p className="mt-1 text-sm text-ink-500">
-        {results.total.toLocaleString()} listings across Uganda and Kenya. Prices include VAT where it applies.
+        {results.total.toLocaleString()} listings on Bemz Africa. Payment and delivery options vary by country and zone. Prices include VAT where it applies.
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">

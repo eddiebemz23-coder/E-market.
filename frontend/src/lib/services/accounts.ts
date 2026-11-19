@@ -8,6 +8,7 @@ import { conflict, forbidden, notFound, unprocessable } from '../http';
 import { uniqueSlug, shopSlugTaken } from '../slug';
 import type { registerSchema, updateProfileSchema, shippingAddressSchema, updateAddressSchema } from '../validation/auth';
 import type { payoutAccountSchema } from '../validation/catalog';
+import { notifyAccountChange } from '../email';
 
 /**
  * Account, profile and address book operations shared by the API routes.
@@ -184,28 +185,49 @@ export async function loadMe(userId: string) {
 }
 
 export async function updateProfile(userId: string, patch: ProfilePatch) {
-  const data: Record<string, unknown> = {};
-  if (patch.name !== undefined) data.name = patch.name;
-  if (patch.gender !== undefined) data.gender = patch.gender;
-  if (patch.preferredCurrency !== undefined) data.preferredCurrency = patch.preferredCurrency;
-  if (patch.languageCode !== undefined) data.languageCode = patch.languageCode;
-  if (patch.marketingOptIn !== undefined) data.marketingOptIn = patch.marketingOptIn;
-  if (patch.whatsappOptIn !== undefined) data.whatsappOptIn = patch.whatsappOptIn;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { ...publicUserSelect, gender: true, marketingOptIn: true, whatsappOptIn: true },
+  });
+  if (!user) throw notFound('Account not found');
 
-  if (patch.email !== undefined) {
+  const labels = {
+    name: 'name',
+    gender: 'gender',
+    preferredCurrency: 'preferred currency',
+    languageCode: 'language',
+    marketingOptIn: 'marketing preference',
+    whatsappOptIn: 'WhatsApp preference',
+    email: 'email address',
+  } as const;
+  const fields = Object.keys(labels) as (keyof typeof labels)[];
+  const supplied = fields.filter((field) => patch[field] !== undefined);
+  if (supplied.length === 0) throw unprocessable('Nothing to update');
+  const changed = supplied.filter((field) => patch[field] !== user[field]);
+  if (changed.length === 0) {
+    const { gender, marketingOptIn, whatsappOptIn, ...profile } = user;
+    return profile;
+  }
+
+  const data: Record<string, unknown> = Object.fromEntries(changed.map((field) => [field, patch[field]]));
+  if (changed.includes('email')) {
     const taken = await prisma.user.findFirst({
       where: { email: patch.email, NOT: { id: userId } },
       select: { id: true },
     });
     if (taken) throw conflict('That email belongs to another account');
-    data.email = patch.email;
-    // We cannot verify an email without a link, but changing it clears the old proof.
     data.emailVerified = null;
   }
 
-  if (Object.keys(data).length === 0) throw unprocessable('Nothing to update');
-
-  return prisma.user.update({ where: { id: userId }, data, select: publicUserSelect });
+  const updated = await prisma.user.update({ where: { id: userId }, data, select: publicUserSelect });
+  await notifyAccountChange({
+    userId,
+    recipients: [user.email, updated.email],
+    template: 'profile_updated',
+    subject: 'Bemz: your account details changed',
+    message: `Your account's ${changed.map((field) => labels[field]).join(', ')} changed.${changed.includes('email') ? '\n\nYour email address was replaced. This notice does not verify the new address.' : ''}`,
+  });
+  return updated;
 }
 
 /**
@@ -214,7 +236,7 @@ export async function updateProfile(userId: string, patch: ProfilePatch) {
  * so an XSS payload holding a valid session cookie cannot lock the owner out.
  */
 export async function changePassword(userId: string, params: { currentPassword?: string; newPassword: string }) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, email: true } });
   if (!user) throw notFound('Account not found');
 
   // An account that already has a password must prove it, so a hijacked session cookie
@@ -233,18 +255,32 @@ export async function changePassword(userId: string, params: { currentPassword?:
     data: { passwordHash: await hashPassword(params.newPassword), failedLoginCount: 0, lockedUntil: null },
   });
 
+  await notifyAccountChange({
+    userId,
+    recipients: [user.email],
+    template: 'password_changed',
+    subject: 'Bemz: your password changed',
+    message: user.passwordHash ? 'Your account password was changed.' : 'A password was added to your account.',
+  });
   return { hasPassword: true };
 }
 
 /** A seller who decides OTP is enough can drop the password and rely on SMS. */
 export async function removePassword(userId: string, params: { currentPassword: string }) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, email: true } });
   if (!user?.passwordHash) throw unprocessable('This account has no password to remove');
 
   const ok = await verifyPassword(params.currentPassword, user.passwordHash);
   if (!ok) throw forbidden('Your current password is not correct');
 
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: null } });
+  await notifyAccountChange({
+    userId,
+    recipients: [user.email],
+    template: 'password_removed',
+    subject: 'Bemz: your password was removed',
+    message: 'Your account password was removed. Signing in now requires a verification code.',
+  });
   return { hasPassword: false };
 }
 
@@ -407,6 +443,12 @@ export async function createAddress(userId: string, input: AddressInput): Promis
     });
   });
 
+  await notifyAccountChange({
+    userId,
+    template: 'address_added',
+    subject: 'Bemz: an address was added',
+    message: 'A delivery address was added to your account. Review your address book for details.',
+  });
   return toAddressView(address);
 }
 
@@ -458,8 +500,8 @@ export async function updateAddress(userId: string, addressId: string, patch: Ad
 
   if (patch.archived !== undefined) data.archivedAt = patch.archived ? new Date() : null;
 
-  const wasDefault = (await prisma.shippingAddress.findUnique({ where: { id: addressId }, select: { isDefault: true } }))
-    ?.isDefault;
+  const previous = await prisma.shippingAddress.findUniqueOrThrow({ where: { id: addressId }, include: addressInclude });
+  const wasDefault = previous.isDefault;
 
   const address = await prisma.$transaction(async (tx) => {
     if (patch.isDefault === true) {
@@ -488,7 +530,16 @@ export async function updateAddress(userId: string, addressId: string, patch: Ad
     return updated;
   });
 
-  return toAddressView(address);
+  const view = toAddressView(address);
+  if (JSON.stringify(view) !== JSON.stringify(toAddressView(previous)) || Boolean(address.archivedAt) !== Boolean(previous.archivedAt)) {
+    await notifyAccountChange({
+      userId,
+      template: 'address_updated',
+      subject: 'Bemz: your address book changed',
+      message: 'A delivery address or its default/archive setting changed. Review your address book for details.',
+    });
+  }
+  return view;
 }
 
 /**
@@ -498,7 +549,7 @@ export async function updateAddress(userId: string, addressId: string, patch: Ad
 export async function deleteAddress(userId: string, addressId: string): Promise<{ deletedDefaultReassigned: boolean }> {
   await loadOwnedAddress(userId, addressId);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const target = await tx.shippingAddress.findUnique({ where: { id: addressId }, select: { isDefault: true } });
     await tx.shippingAddress.delete({ where: { id: addressId } });
 
@@ -515,6 +566,13 @@ export async function deleteAddress(userId: string, addressId: string): Promise<
     }
     return { deletedDefaultReassigned: false };
   });
+  await notifyAccountChange({
+    userId,
+    template: 'address_deleted',
+    subject: 'Bemz: an address was removed',
+    message: 'A delivery address was removed from your account.',
+  });
+  return result;
 }
 
 /** `POST /api/shops` — full shop creation with district + country checks. */
@@ -544,7 +602,7 @@ export async function createShop(
   });
   if (!district) throw unprocessable('Choose the district you dispatch from');
   if (district.country.code !== input.country) {
-    throw unprocessable(`That district is not in ${input.country === 'UG' ? 'Uganda' : 'Kenya'}`);
+    throw unprocessable('That district is not in the selected country');
   }
 
   const phone = normalisePhone(input.phone, input.country);
@@ -578,6 +636,12 @@ export async function createShop(
   // filter on `role: 'BUYER'` is what stops this from ever demoting them.
   await prisma.user.updateMany({ where: { id: userId, role: 'BUYER' }, data: { role: 'SELLER' } });
 
+  await notifyAccountChange({
+    userId,
+    template: 'seller_account_created',
+    subject: 'Bemz: your seller account changed',
+    message: 'A shop was opened on your account. Your seller tools are now available; shop approval is still pending.',
+  });
   return shop;
 }
 /** Payout details are stored verbatim: a wrong MoMo number sends real money to a stranger. */
@@ -586,7 +650,16 @@ export async function upsertPayoutAccount(
   input: z.infer<typeof payoutAccountSchema>,
 ) {
   const number = normaliseAccountNumber(input.accountNumber, input.provider);
-  return prisma.payoutAccount.upsert({
+  const previous = await prisma.payoutAccount.findUnique({
+    where: { shopId },
+    select: { id: true, provider: true, accountNumber: true, accountName: true, bankName: true, isVerified: true },
+  });
+  if (previous && previous.provider === input.provider && previous.accountNumber === number &&
+    previous.accountName === input.accountName && (input.bankName === undefined || previous.bankName === input.bankName)) {
+    return previous;
+  }
+  const shop = await prisma.shop.findUniqueOrThrow({ where: { id: shopId }, select: { ownerId: true } });
+  const account = await prisma.payoutAccount.upsert({
     where: { shopId },
     create: {
       shopId,
@@ -606,6 +679,13 @@ export async function upsertPayoutAccount(
     },
     select: { id: true, provider: true, accountNumber: true, accountName: true, bankName: true, isVerified: true },
   });
+  await notifyAccountChange({
+    userId: shop.ownerId,
+    template: 'payout_account_changed',
+    subject: 'Bemz: your payout details changed',
+    message: 'Your payout destination details changed and require verification. Review your seller payout settings immediately if this was not you.',
+  });
+  return account;
 }
 
 /** MoMo providers route on E.164; bank numbers are literal account digits. */

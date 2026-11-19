@@ -4,6 +4,7 @@ import { conflict, forbidden, notFound, unprocessable } from '../http';
 import { uniqueSlug, shopSlugTaken } from '../slug';
 import { tryNormalisePhone, normalisePhone } from '../phone';
 import { env } from '../env';
+import { notifyAccountChange } from '../email';
 import { signedUploadParams, isCloudinaryConfigured, buildPublicId, destroyAsset, signedViewUrl, type UploadTarget } from '../cloudinary';
 import type { shopQuerySchema, updateShopSchema, kycSubmissionSchema } from '../validation/catalog';
 import type { z } from 'zod';
@@ -345,11 +346,27 @@ export async function updateShop(shop: Shop, patch: UpdateShopInput) {
 
   if (Object.keys(data).length === 0) throw unprocessable('Nothing to update');
 
-  return prisma.shop.update({
+  const changed = Object.entries(data).some(([field, value]) =>
+    field === 'baseDistrict'
+      ? data.baseDistrict?.connect?.id !== shop.baseDistrictId
+      : value !== shop[field as keyof Shop],
+  );
+  const updated = await prisma.shop.update({
     where: { id: shop.id },
     data,
     select: { id: true, name: true, slug: true, tagline: true, description: true, phone: true, whatsappNumber: true, email: true, baseDistrictId: true, defaultFulfilment: true, dispatchSlaHours: true, status: true },
   });
+
+  if (changed) {
+    await notifyAccountChange({
+      userId: shop.ownerId,
+      template: 'shop_updated',
+      subject: 'Your shop details were updated',
+      message: `The shop details for ${updated.name} were updated. Review your seller dashboard for details.`,
+    });
+  }
+
+  return updated;
 }
 
 /**
@@ -359,11 +376,22 @@ export async function updateShop(shop: Shop, patch: UpdateShopInput) {
 export async function setVacationMode(shop: Shop, on: boolean) {
   if (!on && shop.status !== 'ACTIVE') throw forbidden('Support must reopen your shop');
 
-  return prisma.shop.update({
+  const updated = await prisma.shop.update({
     where: { id: shop.id },
     data: { vacationMode: on },
     select: { id: true, vacationMode: true, name: true, slug: true },
   });
+
+  if (updated.vacationMode !== shop.vacationMode) {
+    await notifyAccountChange({
+      userId: shop.ownerId,
+      template: 'shop_vacation_changed',
+      subject: 'Your shop vacation mode was updated',
+      message: `Vacation mode for ${updated.name} is now ${updated.vacationMode ? 'on' : 'off'}. Review your seller dashboard for details.`,
+    });
+  }
+
+  return updated;
 }
 
 /**
@@ -385,6 +413,13 @@ export async function closeShop(shop: Shop) {
     prisma.product.updateMany({ where: { shopId: shop.id, deletedAt: null }, data: { status: 'ARCHIVED' } }),
     prisma.shop.update({ where: { id: shop.id }, data: { status: 'CLOSED', vacationMode: false } }),
   ]);
+
+  await notifyAccountChange({
+    userId: shop.ownerId,
+    template: 'shop_closed',
+    subject: 'Your shop was closed',
+    message: `${shop.name} is now closed. Review your seller dashboard for details.`,
+  });
 
   return { closed: true };
 }
@@ -455,6 +490,13 @@ export async function submitKyc(shop: Shop, input: KycSubmission) {
     });
   });
 
+  await notifyAccountChange({
+    userId: shop.ownerId,
+    template: 'kyc_submitted',
+    subject: 'Your shop verification was submitted',
+    message: `Verification documents for ${shop.name} were submitted for review. Review your seller dashboard for details.`,
+  });
+
   return {
     submitted: true,
     documents: documents.map((document) => document.type),
@@ -470,6 +512,15 @@ export async function withdrawKyc(shop: Shop) {
 
   const pending = await prisma.kycDocument.deleteMany({ where: { shopId: shop.id, status: 'SUBMITTED' } });
   await prisma.shop.update({ where: { id: shop.id }, data: { kycStatus: 'NOT_SUBMITTED' } });
+
+  if (pending.count > 0 || shop.kycStatus !== 'NOT_SUBMITTED') {
+    await notifyAccountChange({
+      userId: shop.ownerId,
+      template: 'kyc_withdrawn',
+      subject: 'Your shop verification was withdrawn',
+      message: `Verification for ${shop.name} is now not submitted. Review your seller dashboard for details.`,
+    });
+  }
 
   return { removed: pending.count, kycStatus: 'NOT_SUBMITTED' as const };
 }
@@ -559,7 +610,7 @@ export async function decideKyc(params: {
 
   const documents = await prisma.kycDocument.findMany({
     where: { id: { in: params.documentIds }, shopId: params.shopId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (documents.length !== params.documentIds.length) throw unprocessable('One of those documents belongs to another shop');
 
@@ -618,6 +669,15 @@ export async function decideKyc(params: {
     select: { kycStatus: true, status: true },
   });
 
+  if (documents.some((document) => document.status !== status) || settled.kycStatus !== shop.kycStatus || settled.status !== shop.status) {
+    await notifyAccountChange({
+      userId: shop.ownerId,
+      template: 'kyc_reviewed',
+      subject: 'Your shop verification was reviewed',
+      message: `Verification for ${shop.name} is now ${settled.kycStatus.toLowerCase().replace(/_/g, ' ')}. Shop status: ${settled.status.toLowerCase()}. Review your seller dashboard for details.`,
+    });
+  }
+
   return { shopId: params.shopId, kycStatus: settled.kycStatus, shopStatus: settled.status };
 }
 
@@ -675,12 +735,22 @@ export async function setShopMedia(
 ) {
   const field = params.kind === 'logo' ? { logoUrl: params.url, logoPublicId: params.publicId } : { bannerUrl: params.url, bannerPublicId: params.publicId };
   const previous = params.kind === 'logo' ? shop.logoPublicId : shop.bannerPublicId;
+  const previousUrl = params.kind === 'logo' ? shop.logoUrl : shop.bannerUrl;
 
   const updated = await prisma.shop.update({
     where: { id: shop.id },
     data: field,
     select: { id: true, logoUrl: true, bannerUrl: true },
   });
+
+  if (previous !== params.publicId || previousUrl !== params.url) {
+    await notifyAccountChange({
+      userId: shop.ownerId,
+      template: 'shop_media_updated',
+      subject: 'Your shop image was updated',
+      message: `The ${params.kind} for ${shop.name} was updated. Review your seller dashboard for details.`,
+    });
+  }
 
   if (previous && previous !== params.publicId) await destroyAsset(previous).catch(() => false);
   return updated;

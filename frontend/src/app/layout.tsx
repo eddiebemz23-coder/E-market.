@@ -12,12 +12,12 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: 'Bemz Africa | buy from traders across 55 markets',
+    default: 'Bemz Africa | Your marketplace across Africa',
     template: '%s · Bemz Africa',
   },
   description:
-    'A marketplace for African traders: prices in US dollars or your local currency, pay with MoMo, Airtel Money or cash, and get delivery to your district.',
-  keywords: ['African marketplace', 'online shopping Uganda Kenya', 'MTN MoMo', 'Airtel Money', 'Kampala', 'Nairobi'],
+    'Discover shops and connect with traders across Africa. Browse prices in your currency, with payment and delivery options available for your location.',
+  keywords: ['African marketplace', 'online shopping Africa', 'African shops', 'local businesses', 'buy and sell'],
   icons: {
     apple: '/icons/apple-touch-icon.png',
   },

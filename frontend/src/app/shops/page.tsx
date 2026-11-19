@@ -21,9 +21,9 @@ import { ShopCardTile } from '@/components/shop-card';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Shops — Uganda and Kenya',
+  title: 'Shops — Bemz Africa',
   description:
-    'Browse verified sellers on Bemz Africa: shops in Kampala, Wakiso, Nairobi and Mombasa with delivery priced by district.',
+    'Browse shops on Bemz Africa, a marketplace for buyers and sellers across Africa. Delivery availability and fees depend on country and zone.',
 };
 
 interface Props {
@@ -80,7 +80,7 @@ export default async function ShopsPage({ searchParams }: Props) {
             Country
           </label>
           <select id="shops-country" name="country" defaultValue={query.country ?? ''} className="field-input">
-            <option value="">Both markets</option>
+            <option value="">All countries</option>
             {REGION_LIST.map((region) => (
               <option key={region.code} value={region.code}>
                 {region.name}

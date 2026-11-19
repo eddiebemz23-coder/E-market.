@@ -46,10 +46,8 @@ export const POST = withRoute(async (request: Request) => {
     defaultRegion: body.defaultRegion,
   });
 
-  // A verified number is the cheapest fraud control we have: it gates payouts and COD.
-  const user = await prisma.user.update({
+  const user = await prisma.user.findUniqueOrThrow({
     where: { id: existing.id },
-    data: { phoneVerified: existing.phoneVerified ?? new Date() },
     select: { id: true, name: true, phone: true, role: true, phoneVerified: true },
   });
 

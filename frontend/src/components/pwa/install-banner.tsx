@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useInstallPrompt } from '@/lib/client/install-prompt';
@@ -13,6 +14,7 @@ const DISMISSED_KEY = 'bemz-' + 'install' + '-dismissed';
  * it — and it stays out of the way once dismissed or once the app is installed.
  */
 export function InstallBanner() {
+  const pathname = usePathname();
   const { canPrompt, standalone, ios, install } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(true);
 
@@ -31,7 +33,7 @@ export function InstallBanner() {
     setDismissed(true);
   }
 
-  if (dismissed || standalone) return null;
+  if (dismissed || standalone || pathname === '/login' || pathname === '/register') return null;
 
   return (
     <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 md:hidden">

@@ -5,7 +5,7 @@ import { RegisterForm } from '@/components/auth/register-form';
 
 export const metadata: Metadata = {
   title: 'Create an account',
-  description: 'Register as a buyer in Uganda or Kenya, or open a Bemz shop and start selling.',
+  description: 'Join Bemz Africa, a marketplace for buyers and sellers across Africa. Payment and delivery options vary by country and zone.',
   robots: { index: false, follow: false },
 };
 
@@ -22,7 +22,7 @@ export default async function RegisterPage({
   if (user) redirect(safeTarget(searchParams.callbackUrl));
 
   return (
-    <div className="container-page py-8 sm:py-12">
+    <div className="auth-page container-page py-8 sm:py-12">
       <RegisterForm
         initialSeller={searchParams.role === 'seller'}
         callbackUrl={safeTarget(searchParams.callbackUrl)}

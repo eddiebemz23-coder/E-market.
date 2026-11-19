@@ -30,21 +30,21 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10 pb-12">
-      <section className="bg-gradient-to-b from-bemz-50 to-ink-50">
+      <section className="bg-gradient-to-br from-bemz-100/50 via-white/20 to-pink-100/60">
         <div className="container-page grid gap-8 py-10 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-bemz-700 shadow-card">
               <Truck className="size-3.5" />
-              Delivery priced by district, across 55 African countries
+              Connecting buyers and sellers across Africa
             </p>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-ink-950 sm:text-4xl">
-              Buy from traders near you.
-              <span className="block text-bemz-700">Pay with MoMo, Airtel Money or cash.</span>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-bemz-950 sm:text-4xl">
+              Your local discoveries.
+              <span className="block text-pink-800">An African marketplace.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-ink-600">
-              Bemz is a marketplace for Africa: real shops from Kampala to Nairobi, prices in US dollars
-              or your local currency with VAT included, and a rider who brings the parcel to your parish
-              instead of a pickup point across town.
+              Discover products and independent shops across Africa. Browse prices in US dollars or
+              your local currency, with payment methods and delivery options available for your country
+              and the seller’s delivery zone.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <LinkButton href="/search?sort=popular" size="lg">
@@ -57,12 +57,12 @@ export default async function HomePage() {
             </div>
             <dl className="mt-7 grid max-w-lg grid-cols-3 gap-4 text-sm">
               <div>
-                <dt className="text-ink-500">Pay</dt>
-                <dd className="font-semibold text-ink-900">MTN · Airtel · Card</dd>
+                <dt className="text-ink-500">Community</dt>
+                <dd className="font-semibold text-ink-900">Across Africa</dd>
               </div>
               <div>
-                <dt className="text-ink-500">Markets</dt>
-                <dd className="font-semibold text-ink-900">USD · UGX · KES +40</dd>
+                <dt className="text-ink-500">Prices</dt>
+                <dd className="font-semibold text-ink-900">Your currency</dd>
               </div>
               <div>
                 <dt className="text-ink-500">Verified sellers</dt>
@@ -192,7 +192,7 @@ export default async function HomePage() {
             <div>
               <p className="font-semibold text-ink-900">Priced by zone, not by guesswork</p>
               <p className="mt-1 text-sm text-ink-600">
-                Delivery fees and the number of days are set per zone, so Gulu and Kampala are not quoted the same promise.
+                See delivery fees and estimated times for your zone, based on the seller’s coverage.
               </p>
             </div>
           </div>

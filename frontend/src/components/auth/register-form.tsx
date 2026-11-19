@@ -132,8 +132,9 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
 
   if (signedUpPhone) {
     return (
-      <div className="card mx-auto w-full max-w-md p-6">
-        <h1 className="text-xl font-bold text-ink-900">Enter your verification code</h1>
+      <div className="auth-card mx-auto max-w-lg">
+        <p className="mb-5 text-[11px] font-semibold tracking-[0.2em] text-bemz-800">ALMOST THERE</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-bemz-950">Check your code</h1>
         <p className="mt-2 text-sm text-ink-600">
           {shopCreated
             ? 'Your shop is open in draft. Verify the account, then add your first listing.'
@@ -189,11 +190,11 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
   }
 
   return (
-    <div className="card mx-auto w-full max-w-lg p-6">
-      <h1 className="text-xl font-bold text-ink-900">Create your Bemz account</h1>
-      <p className="mt-1 text-sm text-ink-500">
-        Email and password are required. We send a verification code to both your phone and your
-        email.
+    <div className="auth-card mx-auto max-w-lg">
+      <p className="mb-5 text-[11px] font-semibold tracking-[0.2em] text-bemz-800">JOIN BEMZ AFRICA</p>
+      <h1 className="text-3xl font-semibold tracking-tight text-bemz-950">Your next connection starts here.</h1>
+      <p className="mt-3 text-sm leading-relaxed text-ink-600">
+        Create your account to shop, sell and connect across Africa.
       </p>
 
       {formError && (
@@ -299,15 +300,15 @@ export function RegisterForm({ initialSeller = false, callbackUrl = '/' }: { ini
         />
         {issues.acceptTerms && <p className="text-sm text-clay-700">{issues.acceptTerms}</p>}
 
-        <Button block size="lg" type="submit" loading={busy} disabled={!acceptTerms}>
+        <Button block size="lg" className="rounded-xl bg-bemz-800 hover:bg-bemz-900" type="submit" loading={busy} disabled={!acceptTerms}>
           {asSeller ? 'Create account and shop' : 'Create account'}
         </Button>
       </form>
 
-      <p className="mt-5 text-center text-sm text-ink-500">
+      <p className="mt-8 border-t border-ink-100 pt-6 text-center text-sm text-ink-600">
         Already registered?{' '}
-        <Link href="/login" className="font-medium text-bemz-700 hover:underline">
-          Sign in with a code
+        <Link href="/login" className="font-semibold text-pink-800 hover:underline">
+          Sign in
         </Link>
       </p>
     </div>

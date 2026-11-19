@@ -5,7 +5,7 @@ import { env } from './env';
 import { normalisePhone, type SupportedRegion } from './phone';
 import { newOtpCode } from './ids';
 import { sendSms } from './sms';
-import { sendEmail, otpEmail } from './email';
+import { sendEmail, otpEmail, notifyAccountChange } from './email';
 import { ApiError, tooManyRequests } from './http';
 
 /**
@@ -192,6 +192,15 @@ export async function verifyOtp(params: {
     },
   });
 
+  if ((!user.phoneVerified && updated.phoneVerified) || (!user.emailVerified && updated.emailVerified) || user.status !== updated.status) {
+    await notifyAccountChange({
+      userId: user.id,
+      recipients: [updated.email],
+      template: 'account_verified',
+      subject: 'Bemz: your account verification changed',
+      message: 'Your account verification details changed after a verification code was confirmed.',
+    });
+  }
   return { e164: phone.e164, userId: updated.id, isNewAccount: false };
 }
 

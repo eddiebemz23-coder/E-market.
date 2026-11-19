@@ -14,7 +14,14 @@
   }
 
   body {
-    @apply bg-ink-50 text-ink-950 antialiased;
+    @apply text-ink-950 antialiased;
+    min-height: 100svh;
+    background-color: #f3faf5;
+    background-image:
+      radial-gradient(ellipse at 5% 5%, #ccebd6 0%, transparent 52%),
+      radial-gradient(ellipse at 95% 85%, #f5d6e5 0%, transparent 55%),
+      linear-gradient(125deg, #edf8f0 0%, #fafaf7 50%, #fce8f0 100%);
+    background-attachment: fixed;
     /* A rider-sized phone must never get a horizontal scrollbar from a wide product table. */
     overflow-x: hidden;
   }
@@ -56,6 +63,23 @@
 
   .card {
     @apply rounded-card border border-ink-200/70 bg-white shadow-card;
+  }
+
+  .auth-card {
+    @apply w-full rounded-3xl border border-white/90 bg-white/90 p-6 backdrop-blur-sm sm:p-10;
+    box-shadow: 0 24px 80px -32px rgb(28 77 52 / 25%), 0 4px 20px rgb(122 58 87 / 4%);
+  }
+
+  .auth-card .field-input {
+    @apply rounded-xl border-ink-200/80 bg-white;
+  }
+
+  .auth-page {
+    min-height: calc(100svh - 4rem);
+  }
+
+  #main:has(.auth-page) {
+    padding-bottom: 0;
   }
 
   .field-label {

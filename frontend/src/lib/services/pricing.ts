@@ -216,7 +216,7 @@ export async function quoteBasket(params: {
 
   const currencies = new Set(variants.map((variant) => variant.product.shop.country.currency));
   if (currencies.size > 1) {
-    throw badRequest('A cart cannot mix Ugandan and Kenyan sellers — checkout each shop separately');
+    throw badRequest('A cart cannot mix sellers using different currencies — check out each shop separately');
   }
   const currency = [...currencies][0] as CurrencyCode;
   if (currency !== district.country.currency) {

@@ -3,13 +3,6 @@ import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 import { env } from './env';
 
-/**
- * Email transport (SMTP — Gmail app password in production). Mirrors the SMS rail: when
- * credentials are absent the message is logged and the notification row is written as SENT
- * with a `simulated:` provider id, so flows stay testable without pretending a real inbox
- * was reached.
- */
-
 export type SendEmailInput = {
   to: string;
   subject: string;
@@ -54,7 +47,11 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   });
 
   if (!config.SMTP_HOST || !config.SMTP_USER || !config.SMTP_PASS) {
-    console.warn(`[email:simulated] -> ${input.to}: ${input.subject} | ${input.message}`);
+    if (config.NODE_ENV === 'production') {
+      await prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+      throw new Error('Email delivery is not configured');
+    }
+    console.warn(`[email:simulated] -> ${input.to}: ${input.subject}`);
     await prisma.notification.update({
       where: { id: notification.id },
       data: { status: 'SENT', providerMessageId: `simulated:${notification.id}` },
@@ -77,6 +74,33 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   } catch (error) {
     await prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
     throw error;
+  }
+}
+
+export async function notifyAccountChange(input: {
+  userId: string;
+  template: string;
+  subject: string;
+  message: string;
+  recipients?: (string | null)[];
+}): Promise<void> {
+  try {
+    const recipients = input.recipients ?? [
+      (await prisma.user.findUnique({ where: { id: input.userId }, select: { email: true } }))?.email ?? null,
+    ];
+    const addresses = [...new Set(recipients.filter((email): email is string => Boolean(email)).map((email) => email.trim().toLowerCase()).filter(Boolean))];
+    const message = `${input.message}\n\nTime (UTC): ${new Date().toISOString()}\n\nIf you did not expect this change, contact Bemz support immediately. Never share your password or verification codes.`;
+
+    // Await each delivery before the serverless request ends, without undoing a saved change.
+    await Promise.all(addresses.map(async (to) => {
+      try {
+        await sendEmail({ to, userId: input.userId, template: input.template, subject: input.subject, message });
+      } catch {
+        console.error(`[account:${input.template}] email delivery failed for user ${input.userId}`);
+      }
+    }));
+  } catch {
+    console.error(`[account:${input.template}] email notification failed for user ${input.userId}`);
   }
 }
 

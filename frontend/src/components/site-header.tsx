@@ -31,6 +31,25 @@ export function SiteHeader() {
 
   const role = session?.user?.role;
 
+  if (pathname === '/login' || pathname === '/register') {
+    return (
+      <header className="border-b border-white/60 bg-white/40">
+        <div className="container-page flex h-16 items-center justify-between gap-3">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 whitespace-nowrap" aria-label="Bemz Africa home">
+            <span className="grid size-9 place-items-center rounded-xl bg-bemz-800 text-lg font-black text-white">B</span>
+            <span className="text-base font-bold tracking-tight text-bemz-950 min-[400px]:text-lg">Bemz <span className="font-medium text-pink-800">Africa</span></span>
+          </Link>
+          <div className="flex items-center gap-1 sm:gap-4">
+            <InstallButton />
+            <Link href="/" aria-label="Back to marketplace" className="whitespace-nowrap rounded-lg py-2 text-[11px] font-medium text-bemz-900 hover:bg-white/60 min-[400px]:px-2 min-[400px]:text-xs sm:text-sm">
+              <span className="hidden min-[400px]:inline">Back to </span>marketplace <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-ink-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -38,7 +57,7 @@ export function SiteHeader() {
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Bemz Africa home">
           <span className="grid size-9 place-items-center rounded-lg bg-bemz-600 text-lg font-black text-white">B</span>
           <span className="hidden text-lg font-bold leading-none tracking-tight text-ink-900 sm:block">
-            Bemz<span className="text-clay-500">Africa</span>
+            Bemz <span className="text-pink-800">Africa</span>
           </span>
         </Link>
 

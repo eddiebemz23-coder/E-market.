@@ -9,13 +9,13 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Bemz Africa Marketplace',
     short_name: 'Bemz',
-    description: 'Buy from traders across Africa. Pay with MoMo, Airtel Money or cash.',
+    description: 'Discover shops, buy and sell, and connect with traders across Africa.',
     id: '/',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#ffffff',
+    background_color: '#f3faf5',
     theme_color: '#1f8a4c',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },

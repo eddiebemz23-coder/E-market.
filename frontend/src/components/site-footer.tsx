@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
@@ -21,16 +24,19 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
 ];
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  if (pathname === '/login' || pathname === '/register') return null;
+
   return (
-    <footer className="mt-12 border-t border-ink-200 bg-white">
+    <footer className="mt-12 border-t border-white/80 bg-white/70">
       <div className="container-page grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="text-lg font-bold text-ink-900">
-            Bemz<span className="text-clay-500">Africa</span>
+            Bemz <span className="text-pink-800">Africa</span>
           </p>
           <p className="mt-2 max-w-xs text-sm text-ink-500">
-            A marketplace built for Uganda and Kenya: prices in shillings, delivery to your district, payment by
-            mobile money.
+            Connecting buyers and sellers across Africa. Discover local shops, compare prices in your currency,
+            and explore delivery options for your location.
           </p>
         </div>
 

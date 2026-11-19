@@ -39,13 +39,13 @@ export function PhoneInput({
 
   return (
     <Field label={label} htmlFor={id} error={error} hint={`Format: ${selected.phoneHint}`} required={required}>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)]">
         <select
           aria-label="Country"
           value={region}
           disabled={disabled}
           onChange={(event) => onRegionChange(event.target.value as AfricanCountryCode)}
-          className="h-[46px] rounded-lg border border-ink-200 bg-white px-2 text-sm"
+          className="h-[46px] min-w-0 w-full rounded-xl border border-ink-200 bg-white px-2 text-sm"
         >
           {REGION_ORDER.map((code) => (
             <option key={code} value={code}>

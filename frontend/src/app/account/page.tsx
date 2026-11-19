@@ -204,9 +204,9 @@ export default async function AccountPage() {
       </section>
 
       <p className="px-1 text-xs leading-relaxed text-ink-500">
-        Your phone number is the account in both markets — email stays optional. If you lose the SIM, contact support
-        with the number and the order numbers you can still see here; the payment trail on each order is what proves the
-        parcels were yours.
+        Both your phone number and email are required for your Bemz account. Keep your account email up to date.
+        If you lose access to your phone number, contact support with your account details and any order numbers
+        you can still see here.
       </p>
     </div>
   );

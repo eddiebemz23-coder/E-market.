@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { ArrowRight, KeyRound, MessageSquare, ShieldCheck } from 'lucide-react';
 import { api, ApiFailure } from '@/lib/client/api';
 import { useCart } from '@/lib/client/cart-store';
 import { PhoneInput } from '@/components/auth/phone-input';
@@ -48,6 +49,7 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
   }, [secondsLeft]);
 
   async function sendCode() {
+    if (busy || phone.trim().length < 9) return;
     setError(null);
     setBusy(true);
     try {
@@ -68,46 +70,57 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
   async function finishSignIn(provider: 'phone-otp' | 'password', credentials: Record<string, string>) {
     setBusy(true);
     setError(null);
-    const result = await signIn(provider, { ...credentials, redirect: false });
-    setBusy(false);
+    try {
+      const result = await signIn(provider, { ...credentials, redirect: false });
+      if (!result || result.error) {
+        setError(
+          result?.error === 'CredentialsSignin'
+            ? 'Your sign-in details did not match. Check them and try again.'
+            : 'Sign-in failed. Try again, or request a new code.',
+        );
+        return;
+      }
 
-    if (!result || result.error) {
-      setError(
-        result?.error === 'CredentialsSignin'
-          ? 'That code or password did not match. Check the number and try again.'
-          : 'Sign-in failed. Try again, or request a new code.',
-      );
-      return;
+      // A basket filled while browsing as a guest must survive the login that follows it.
+      if (count > 0) await mergeAfterSignIn();
+      router.replace(callbackUrl);
+      router.refresh();
+    } catch {
+      setError('Could not complete sign-in. Check your connection and try again.');
+    } finally {
+      setBusy(false);
     }
-
-    // A basket filled while browsing as a guest must survive the login that follows it.
-    if (count > 0) await mergeAfterSignIn();
-    router.replace(callbackUrl);
-    router.refresh();
   }
 
   return (
-    <div className="card mx-auto w-full max-w-md p-6">
-      <h1 className="text-xl font-bold text-ink-900">Sign in to Bemz</h1>
-      <p className="mt-1 text-sm text-ink-500">
-        No account yet? Create one first — we send sign-in codes to both your phone and your email.
-      </p>
+    <div className="auth-card mx-auto max-w-lg">
+      <div className="mb-7 flex items-center justify-between">
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-bemz-800">YOUR BEMZ ACCOUNT</p>
+        <span className="grid size-10 place-items-center rounded-full bg-bemz-50 text-bemz-800">
+          <ShieldCheck className="size-5" aria-hidden="true" />
+        </span>
+      </div>
+      <h1 className="text-3xl font-semibold tracking-tight text-bemz-950 sm:text-4xl">Welcome back</h1>
+      <p className="mt-3 text-sm leading-relaxed text-ink-600">Sign in to your African marketplace.</p>
 
-      <div className="mt-5 grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1">
+      <div role="group" aria-label="Sign-in method" className="mt-8 grid grid-cols-2 gap-1 rounded-xl bg-bemz-50/80 p-1.5">
         {(['code', 'password'] as Mode[]).map((option) => (
           <button
             key={option}
             type="button"
+            aria-pressed={mode === option}
+            disabled={busy}
             onClick={() => {
               setMode(option);
               setError(null);
             }}
             className={cn(
-              'rounded-md py-2 text-sm font-medium transition-colors',
-              mode === option ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-600',
+              'flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-xs font-medium transition-colors disabled:opacity-60 min-[400px]:gap-2 min-[400px]:text-sm',
+              mode === option ? 'bg-white text-bemz-950 shadow-sm' : 'text-ink-600 hover:text-bemz-800',
             )}
           >
-            {option === 'code' ? 'Code by SMS + email' : 'Password'}
+            {option === 'code' ? <MessageSquare className="size-4" aria-hidden="true" /> : <KeyRound className="size-4" aria-hidden="true" />}
+            {option === 'code' ? 'One-time code' : 'Password'}
           </button>
         ))}
       </div>
@@ -120,17 +133,22 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
 
       {mode === 'code' ? (
         <form
-          className="mt-5 space-y-4"
+          className="mt-6 space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
-            void finishSignIn('phone-otp', { phone, code });
+            if (busy) return;
+            if (ticket) {
+              if (code.length === 6) void finishSignIn('phone-otp', { phone: ticket.e164, code });
+            } else {
+              void sendCode();
+            }
           }}
         >
-          <PhoneInput value={phone} onChange={setPhone} region={region} onRegionChange={setRegion} disabled={Boolean(ticket)} />
+          <PhoneInput value={phone} onChange={setPhone} region={region} onRegionChange={setRegion} disabled={busy || Boolean(ticket)} />
 
           {!ticket ? (
-            <Button block size="lg" loading={busy} disabled={phone.trim().length < 9} onClick={sendCode} type="button">
-              Send me a code
+            <Button block size="lg" className="rounded-xl bg-bemz-800 hover:bg-bemz-900" loading={busy} disabled={phone.trim().length < 9} type="submit">
+              Continue with code <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
           ) : (
             <>
@@ -142,6 +160,8 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
                 onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                disabled={busy}
+                required
                 autoFocus
                 placeholder="000000"
                 hint={
@@ -152,15 +172,15 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
               />
 
               <div className="flex items-center gap-3">
-                <Button block size="lg" type="submit" loading={busy} disabled={code.length !== 6}>
-                  Sign in
+                <Button block size="lg" className="rounded-xl bg-bemz-800 hover:bg-bemz-900" type="submit" loading={busy} disabled={code.length !== 6}>
+                  Sign in <ArrowRight className="size-4" aria-hidden="true" />
                 </Button>
                 <Button variant="ghost" size="lg" type="button" disabled={secondsLeft > 0 || busy} onClick={sendCode}>
                   {secondsLeft > 0 ? `${secondsLeft}s` : 'Resend'}
                 </Button>
               </div>
 
-              <button type="button" onClick={() => { setTicket(null); setCode(''); }} className="text-sm text-bemz-700 underline">
+              <button type="button" disabled={busy} onClick={() => { setTicket(null); setCode(''); setError(null); }} className="min-h-11 text-sm text-bemz-800 underline disabled:opacity-60">
                 Use a different number
               </button>
             </>
@@ -168,10 +188,10 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
         </form>
       ) : (
         <form
-          className="mt-5 space-y-4"
+          className="mt-6 space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
-            void finishSignIn('password', { identifier, password });
+            if (!busy) void finishSignIn('password', { identifier, password });
           }}
         >
           <TextField
@@ -180,6 +200,8 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             autoComplete="username"
+            placeholder="Email or phone with country code"
+            disabled={busy}
             required
           />
           <TextField
@@ -189,17 +211,18 @@ export function LoginForm({ callbackUrl = '/' }: { callbackUrl?: string }) {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
+            disabled={busy}
             required
           />
-          <Button block size="lg" type="submit" loading={busy}>
-            Sign in
+          <Button block size="lg" className="rounded-xl bg-bemz-800 hover:bg-bemz-900" type="submit" loading={busy}>
+            Sign in <ArrowRight className="size-4" aria-hidden="true" />
           </Button>
         </form>
       )}
 
-      <p className="mt-6 text-center text-sm text-ink-500">
-        New here?{' '}
-        <Link href="/register" className="font-medium text-bemz-700 hover:underline">
+      <p className="mt-8 border-t border-ink-100 pt-6 text-center text-sm text-ink-600">
+        New to Bemz?{' '}
+        <Link href="/register" className="font-semibold text-pink-800 hover:underline">
           Create an account
         </Link>
       </p>

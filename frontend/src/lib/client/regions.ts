@@ -32,8 +32,8 @@ export const REGIONS: Record<AfricanCountryCode, RegionInfo> = Object.fromEntrie
         dialCode: market.dialCode,
         currency: market.currency,
         currencyLabel: market.currencyLabel,
-        phoneHint: '7xxxxxxxx — no leading 0',
-        examplePhone: '7xxxxxxxx',
+        phoneHint: `Local number or full number starting with +${market.dialCode}`,
+        examplePhone: 'Your phone number',
       },
     ];
   }),

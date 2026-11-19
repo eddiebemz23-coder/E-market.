@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description =
     landing.category.description ??
-    `${landing.facets.totalProducts} listings in ${landing.category.name}, delivered across Uganda and Kenya.`;
+    `${landing.facets.totalProducts} listings in ${landing.category.name} on Bemz Africa. Delivery availability depends on country and zone.`;
 
   return {
     title: `${landing.category.name} — buy from verified sellers`,
